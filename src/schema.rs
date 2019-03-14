@@ -161,7 +161,7 @@ impl<'a> From<&'a types::Value> for SchemaKind {
             types::Value::String(_) => SchemaKind::String,
             types::Value::Array(_) => SchemaKind::Array,
             types::Value::Map(_) => SchemaKind::Map,
-            types::Value::Union(_) => SchemaKind::Union,
+            types::Value::Union(_, _) => SchemaKind::Union,
             types::Value::Record(_) => SchemaKind::Record,
             types::Value::Enum(_, _) => SchemaKind::Enum,
             types::Value::Fixed(_, _) => SchemaKind::Fixed,
@@ -316,11 +316,6 @@ impl RecordField {
 #[derive(Debug, Clone)]
 pub struct UnionSchema {
     schemas: Vec<Schema>,
-    // Used to ensure uniqueness of schema inputs, and provide constant time finding of the
-    // schema index given a value.
-    // **NOTE** that this approach does not work for named types, and will have to be modified
-    // to support that. A simple solution is to also keep a mapping of the names used.
-    variant_index: HashMap<SchemaKind, usize>,
 }
 
 impl UnionSchema {
@@ -341,7 +336,6 @@ impl UnionSchema {
         }
         Ok(UnionSchema {
             schemas,
-            variant_index: vindex,
         })
     }
 
@@ -355,14 +349,8 @@ impl UnionSchema {
         !self.schemas.is_empty() && self.schemas[0] == Schema::Null
     }
 
-    /// Optionally returns a reference to the schema matched by this value, as well as its position
-    /// within this enum.
-    pub fn find_schema(&self, value: &crate::types::Value) -> Option<(usize, &Schema)> {
-        let kind = SchemaKind::from(value);
-        self.variant_index
-            .get(&kind)
-            .cloned()
-            .map(|i| (i, &self.schemas[i]))
+    pub fn variant_schema(&self, variant_index: usize) -> Option<&Schema> {
+        self.schemas.get(variant_index)
     }
 }
 
