@@ -91,34 +91,42 @@ impl<'b> ser::Serializer for &'b mut Serializer {
     type SerializeStructVariant = StructSerializer;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_bool(self, v: {:?})", v);
         Ok(Value::Boolean(v))
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_i8(self, v: {:?})", v);
         self.serialize_i32(i32::from(v))
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_i16(self, v: {:?})", v);
         self.serialize_i32(i32::from(v))
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_i32(self, v: {:?})", v);
         Ok(Value::Int(v))
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_i64(self, v: {:?})", v);
         Ok(Value::Long(v))
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_u8(self, v: {:?})", v);
         self.serialize_i32(i32::from(v))
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_u16(self, v: {:?})", v);
         self.serialize_i32(i32::from(v))
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_u32(self, v: {:?})", v);
         if v <= i32::max_value() as u32 {
             self.serialize_i32(v as i32)
         } else {
@@ -127,6 +135,7 @@ impl<'b> ser::Serializer for &'b mut Serializer {
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_u64(self, v: {:?})", v);
         if v <= i64::max_value() as u64 {
             self.serialize_i64(v as i64)
         } else {
@@ -135,26 +144,32 @@ impl<'b> ser::Serializer for &'b mut Serializer {
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_f32(self, v: {:?})", v);
         Ok(Value::Float(v))
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_f64(self, v: {:?})", v);
         Ok(Value::Double(v))
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_char(self, v: {:?})", v);
         self.serialize_str(&once(v).collect::<String>())
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_str(self, v: {:?})", v);
         Ok(Value::String(v.to_owned()))
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_bytes(self, v: {:?})", v);
         Ok(Value::Bytes(v.to_owned()))
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_none(self)");
         Ok(ToAvro::avro(None::<Self::Ok>))
     }
 
@@ -162,96 +177,110 @@ impl<'b> ser::Serializer for &'b mut Serializer {
     where
         T: Serialize,
     {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_some(self, value)");
         let v = value.serialize(&mut Serializer::default())?;
         Ok(ToAvro::avro(Some(v)))
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_unit(self)");
         Ok(Value::Null)
     }
 
-    fn serialize_unit_struct(self, _: &'static str) -> Result<Self::Ok, Self::Error> {
+    fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_unit_struct(self, name: {:?})", name);
         self.serialize_unit()
     }
 
     fn serialize_unit_variant(
         self,
-        _: &'static str,
+        name: &'static str,
         index: u32,
         variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_unit_variant(self, name: {:?}, index: {:?}, variant: {:?})", name, index, variant);
+        // Ok(Value::union_named())
         Ok(Value::Enum(index as i32, variant.to_string()))
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
         self,
-        _: &'static str,
+        name: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize,
     {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_newtype_struct(self, name: {:?}, value)", name);
         value.serialize(self)
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
         self,
-        _: &'static str,
-        _: u32,
-        _: &'static str,
+        name: &'static str,
+        index: u32,
+        variant: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize,
     {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_newtype_variant(self, name: {:?}, index: {:?}, variant: {:?}, value)", name, index, variant);
         value.serialize(self)
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_seq(self, len: {:?})", len);
         Ok(SeqSerializer::new(len))
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_tuple(self, len: {:?})", len);
         self.serialize_seq(Some(len))
     }
 
     fn serialize_tuple_struct(
         self,
-        _: &'static str,
+        name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_tuple_struct(self, name: {:?}, len: {:?})", name, len);
         self.serialize_seq(Some(len))
     }
 
     fn serialize_tuple_variant(
         self,
-        _: &'static str,
-        _: u32,
-        _: &'static str,
-        _: usize,
+        name: &'static str,
+        index: u32,
+        variant: &'static str,
+        len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_tuple_variant(self, name: {:?}, index: {:?}, variant: {:?}, len: {:?})", name, index, variant, len);
         unimplemented!() // TODO ?
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_map(self, len: {:?})", len);
         Ok(MapSerializer::new(len))
     }
 
     fn serialize_struct(
         self,
-        _: &'static str,
+        name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_struct(self, name: {:?}, len: {:?})", name, len);
         Ok(StructSerializer::new(len))
     }
 
     fn serialize_struct_variant(
         self,
-        _: &'static str,
-        _: u32,
-        _: &'static str,
-        _: usize,
+        name: &'static str,
+        index: u32,
+        variant: &'static str,
+        len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        trace!("(ser::Serializer for &'b mut Serializer)::serialize_struct_variant(self, name: {:?}, index: {:?}, variant: {:?}, len: {:?})", name, index, variant, len);
         unimplemented!() // TODO ?
     }
 }
@@ -373,6 +402,7 @@ impl ser::SerializeStruct for StructSerializer {
     where
         T: Serialize,
     {
+        trace!("(ser::SerializeStruct for StructSerializer)::serialize_field(&mut self, name: {:?}, value)", name);
         self.fields.push((
             name.to_owned(),
             value.serialize(&mut Serializer::default())?,
@@ -381,6 +411,7 @@ impl ser::SerializeStruct for StructSerializer {
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
+        trace!("(ser::SerializeStruct for StructSerializer)::end(self)");
         Ok(Value::Record(self.fields))
     }
 }
