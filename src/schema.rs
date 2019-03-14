@@ -1,6 +1,6 @@
 //! Logic for parsing and interacting with schemas in Avro format.
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use digest::Digest;
@@ -320,20 +320,33 @@ pub struct UnionSchema {
 
 impl UnionSchema {
     pub(crate) fn new(schemas: Vec<Schema>) -> Result<Self, Error> {
-        let mut vindex = HashMap::new();
+        let mut prim_index = HashSet::<SchemaKind>::new();
+        let mut record_index = HashSet::<String>::new();
+
         for (i, schema) in schemas.iter().enumerate() {
-            if let Schema::Union(_) = schema {
-                Err(ParseSchemaError::new(
-                    "Unions may not directly contain a union",
-                ))?;
-            }
-            let kind = SchemaKind::from(schema);
-            if vindex.insert(kind, i).is_some() {
-                Err(ParseSchemaError::new(
-                    "Unions cannot contain duplicate types",
-                ))?;
+            match schema {
+                Schema::Union(_) =>
+                    Err(ParseSchemaError::new(
+                        "Unions may not directly contain a union",
+                    ))?,
+                Schema::Record { name, .. } => 
+                    if !record_index.insert(name.fullname(None).clone()) {
+                        Err(ParseSchemaError::new(
+                            "Union cannot have several record-variants with the same record-name",
+                        ))?
+                    },
+                
+                primitive => {
+                    let schema_kind = SchemaKind::from(primitive);
+                    if !prim_index.insert(schema_kind) {
+                        Err(ParseSchemaError::new(
+                            "Unions cannot contain duplicate primitive types",
+                        ))?
+                    }
+                },
             }
         }
+
         Ok(UnionSchema {
             schemas,
         })
